@@ -52,6 +52,10 @@ data/fasttext/*.vec
 # Temporary files
 temp/*
 !temp/.gitkeep
+!temp/extract_words.py
+!temp/raw_words/
+!temp/raw_words/*.txt
+!temp/raw_words/README.md
 
 # Environment variables
 .env
