@@ -1,0 +1,99 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: findword-postgres
+    environment:
+      POSTGRES_DB: findword
+      POSTGRES_USER: findword_user
+      POSTGRES_PASSWORD: findword_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U findword_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - findword_network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: findword-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - findword_network
+
+  # Django Application
+  web:
+    build: .
+    container_name: findword-web
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py collectstatic --noinput &&
+             gunicorn --bind 0.0.0.0:8000 --workers 4 core.wsgi:application"
+    environment:
+      DEBUG: "False"
+      SECRET_KEY: "django-insecure-change-this-in-production"
+      ALLOWED_HOSTS: "localhost,127.0.0.1,web"
+      DATABASE_URL: "postgresql://findword_user:findword_password@postgres:5432/findword"
+      REDIS_URL: "redis://redis:6379/0"
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/data/media
+      - data_volume:/app/data
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - findword_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: findword-nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_volume:/app/staticfiles:ro
+      - media_volume:/app/data/media:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - web
+    networks:
+      - findword_network
+
+volumes:
+  postgres_data:
+  redis_data:
+  static_volume:
+  media_volume:
+  data_volume:
+
+networks:
+  findword_network:
+    driver: bridge
