@@ -1,0 +1,9 @@
+# Jupytext YAML configuration
+# Auto-sync .py files in play/ directory with .ipynb notebooks
+
+formats: "py:percent,ipynb"
+
+# Notebook metadata filters
+notebook_metadata_filter:
+  notebook:
+    jupytext_formats: "py:percent,ipynb"

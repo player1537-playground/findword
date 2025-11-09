@@ -1,4 +1,5 @@
 #!/usr/bin/env -S uv run --isolated --no-project --script
+# %%
 # /// script
 # dependencies = ["fasttext-wheel", "numpy", "pandas"]
 # ///

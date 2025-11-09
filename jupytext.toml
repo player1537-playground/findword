@@ -1,0 +1,11 @@
+# Jupytext configuration
+# Automatically convert Python scripts with # %% cell markers to notebooks
+
+# Default format for .py files
+default_jupytext_formats = "py:percent"
+
+# Notebook metadata
+notebook_metadata_filter = "-all"
+
+# Cell metadata to keep
+cell_metadata_filter = "-all"
