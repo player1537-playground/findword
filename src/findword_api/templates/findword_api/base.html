@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FindWord - Semantic Word Similarity Search</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+
+        main {
+            padding: 40px 30px;
+        }
+
+        .search-section {
+            margin-bottom: 40px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .search-box input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 15px;
+            font-size: 1em;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            transition: border-color 0.3s;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .search-box button {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .search-box button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .filter-group label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .filter-group input[type="radio"],
+        .filter-group input[type="checkbox"] {
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+
+        .filter-group label {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .results-section {
+            margin-top: 40px;
+        }
+
+        .results-title {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .results-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .word-card {
+            background: #f8f9ff;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .word-card:hover {
+            background: #f0f2ff;
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(102, 126, 234, 0.2);
+        }
+
+        .word-card h3 {
+            color: #667eea;
+            margin-bottom: 8px;
+            font-size: 1.3em;
+        }
+
+        .word-card .similarity {
+            font-size: 0.95em;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .similarity-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .similarity-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+
+        .word-card .pos-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .pos-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #e8eaf6;
+            color: #667eea;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .visualization-section {
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .visualization-section button {
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .visualization-section button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .visualization-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .visualization-container img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #c62828;
+            margin-bottom: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        footer {
+            background: #f5f5f5;
+            padding: 20px 30px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            main {
+                padding: 20px;
+            }
+
+            .results-container {
+                grid-template-columns: 1fr;
+            }
+
+            .search-box {
+                flex-direction: column;
+            }
+
+            .search-box input,
+            .search-box button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 FindWord</h1>
+            <p>Semantic Word Similarity Search with FastText Embeddings</p>
+        </header>
+
+        <main>
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer>
+            <p>FindWord API v1.0 | Powered by Django, FastText, and Semantic Analysis</p>
+        </footer>
+    </div>
+
+    <script>
+        // Enhanced search functionality with HTMX-like behavior
+        function performSearch(event) {
+            if (event) event.preventDefault();
+
+            const word = document.getElementById('searchInput').value.trim();
+            if (!word) {
+                alert('Please enter a word to search');
+                return;
+            }
+
+            const pos = document.querySelector('input[name="pos"]:checked')?.value || '';
+            const limit = document.getElementById('limitInput')?.value || '10';
+
+            // Build URL with query parameters
+            let url = `/api/words/${encodeURIComponent(word)}/similar/?limit=${limit}`;
+            if (pos) url += `&pos=${pos}`;
+
+            // Show loading state
+            const resultsSection = document.getElementById('resultsSection');
+            resultsSection.innerHTML = '<div class="loading">Loading similar words...</div>';
+
+            // Fetch results
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    displayResults(word, data);
+                })
+                .catch(error => {
+                    resultsSection.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                });
+        }
+
+        function displayResults(targetWord, results) {
+            const resultsSection = document.getElementById('resultsSection');
+
+            if (!results || results.length === 0) {
+                resultsSection.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <p>No similar words found for "${targetWord}"</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `<h2 class="results-title">Similar words for "${targetWord}"</h2>`;
+            html += '<div class="results-container">';
+
+            results.forEach(item => {
+                const word = item.word;
+                const similarity = item.similarity;
+                const similarityPercent = Math.round(similarity * 100);
+                const posTags = [];
+
+                if (word.is_noun) posTags.push('noun');
+                if (word.is_verb) posTags.push('verb');
+
+                html += `
+                    <div class="word-card" onclick="performSearch.call({value: '${word.word}'}, event)">
+                        <h3>${word.word}</h3>
+                        <div class="similarity">Similarity: ${similarity.toFixed(4)}</div>
+                        <div class="similarity-bar">
+                            <div class="similarity-bar-fill" style="width: ${similarityPercent}%"></div>
+                        </div>
+                        <div class="pos-tags">
+                            ${posTags.map(tag => `<span class="pos-tag">${tag}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            resultsSection.innerHTML = html;
+        }
+
+        function visualizeWord(event) {
+            if (event) event.preventDefault();
+
+            const word = document.getElementById('searchInput').value.trim();
+            if (!word) {
+                alert('Please enter a word to visualize');
+                return;
+            }
+
+            const vizSection = document.getElementById('visualizationContainer');
+            if (!vizSection) return;
+
+            vizSection.innerHTML = '<div class="loading">Generating visualization...</div>';
+
+            const url = `/api/words/${encodeURIComponent(word)}/visualize/?limit=15`;
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    vizSection.innerHTML = `<img src="${url}" alt="Visualization of ${word}" />`;
+                })
+                .catch(error => {
+                    vizSection.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                });
+        }
+
+        // Attach event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchBtn = document.getElementById('searchBtn');
+            if (searchBtn) {
+                searchBtn.addEventListener('click', performSearch);
+            }
+
+            const vizBtn = document.getElementById('visualizeBtn');
+            if (vizBtn) {
+                vizBtn.addEventListener('click', visualizeWord);
+            }
+
+            const searchInput = document.getElementById('searchInput');
+            if (searchInput) {
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        performSearch(e);
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

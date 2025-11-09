@@ -18,16 +18,19 @@ router = DefaultRouter()
 router.register(r'words', views.WordViewSet, basename='word')
 
 urlpatterns = [
-    # API root
-    path('', views.api_root, name='api-root'),
+    # Index/Homepage
+    path('', views.index, name='index'),
+
+    # API root (for browsable API)
+    path('api/', views.api_root, name='api-root'),
 
     # ViewSet routes (includes list, retrieve, and custom actions)
-    path('', include(router.urls)),
+    path('api/', include(router.urls)),
 
     # Search endpoint
-    path('search/', views.search_words, name='search'),
+    path('api/search/', views.search_words, name='search'),
 
     # OpenAPI schema and documentation
-    path('schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('docs/', SpectacularSwaggerView.as_view(url_name='findword_api:schema'), name='docs'),
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='findword_api:schema'), name='docs'),
 ]
