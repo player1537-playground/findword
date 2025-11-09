@@ -16,8 +16,10 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from findword_api import views as findword_views
 
 urlpatterns = [
+    path('', findword_views.index, name='index'),
     path('admin/', admin.site.urls),
     path('api/', include('findword_api.urls')),
 ]
