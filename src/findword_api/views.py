@@ -205,7 +205,7 @@ class WordViewSet(viewsets.ReadOnlyModelViewSet):
         },
     )
     @action(detail=True, methods=['get'], url_path='visualize')
-    def visualize(self, request, word=None):
+    def visualize(self, request, *args, **kwargs):
         """
         Generate a t-SNE visualization of the word and its similar words.
 
@@ -213,6 +213,9 @@ class WordViewSet(viewsets.ReadOnlyModelViewSet):
         - limit: Number of similar words to include (default: 15, max: 50)
         """
         try:
+            # Get the word from the URL parameter
+            word = self.kwargs.get('word')
+
             # Validate limit parameter
             try:
                 limit = int(request.query_params.get('limit', 15))
