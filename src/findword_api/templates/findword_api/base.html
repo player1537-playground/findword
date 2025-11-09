@@ -348,6 +348,7 @@
 
         function displayResults(targetWord, results) {
             const resultsSection = document.getElementById('resultsSection');
+            const maxLength = parseInt(document.getElementById('maxLengthInput')?.value || '20');
 
             if (!results || results.length === 0) {
                 resultsSection.innerHTML = `
@@ -359,10 +360,23 @@
                 return;
             }
 
-            let html = `<h2 class="results-title">Similar words for "${targetWord}"</h2>`;
+            // Filter results by max length
+            const filteredResults = results.filter(item => item.word.word.length <= maxLength);
+
+            if (filteredResults.length === 0) {
+                resultsSection.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📭</div>
+                        <p>No words found matching the length filter (max: ${maxLength} characters)</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = `<h2 class="results-title">Similar words for "${targetWord}" (max ${maxLength} chars)</h2>`;
             html += '<div class="results-container">';
 
-            results.forEach(item => {
+            filteredResults.forEach(item => {
                 const word = item.word;
                 const similarity = item.similarity;
                 const similarityPercent = Math.round(similarity * 100);
@@ -403,7 +417,8 @@
 
             vizSection.innerHTML = '<div class="loading">Generating visualization...</div>';
 
-            const url = `/api/words/${encodeURIComponent(word)}/visualize/?limit=15`;
+            const limit = document.getElementById('limitInput')?.value || '15';
+            const url = `/api/words/${encodeURIComponent(word)}/visualize/?limit=${limit}`;
 
             fetch(url)
                 .then(response => {
