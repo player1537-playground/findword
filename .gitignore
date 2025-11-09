@@ -48,6 +48,8 @@ staticfiles/
 # FastText models (large files)
 data/fasttext/*.bin
 data/fasttext/*.vec
+data/fasttext/*.zip
+data/words.csv
 
 # Temporary files
 temp/*
