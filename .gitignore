@@ -53,6 +53,8 @@ data/fasttext/*.vec
 temp/*
 !temp/.gitkeep
 !temp/extract_words.py
+!temp/classify_words.py
+!temp/words_classified.csv
 !temp/raw_words/
 !temp/raw_words/*.txt
 !temp/raw_words/README.md
