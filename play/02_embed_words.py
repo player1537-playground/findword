@@ -1,7 +1,7 @@
 #!/usr/bin/env -S uv run --isolated --no-project --script
 # %%
 # /// script
-# dependencies = ["fasttext-wheel", "numpy", "pandas"]
+# dependencies = ["gensim>=4.0.0", "numpy", "pandas"]
 # ///
 
 """
@@ -23,39 +23,39 @@ import numpy as np
 import pandas as pd
 
 try:
-    import fasttext
+    from gensim.models import KeyedVectors
 except ImportError:
-    print("Error: fasttext-wheel package not found")
+    print("Error: gensim package not found")
     sys.exit(1)
 
 # %%
-def load_fasttext_model(model_dir: Path) -> fasttext.FastText._FastText:
+def load_fasttext_model(model_dir: Path) -> KeyedVectors:
     """
     Load FastText model from the specified directory.
 
     Args:
-        model_dir: Path to directory containing .bin model file
+        model_dir: Path to directory containing .vec model file
 
     Returns:
-        Loaded FastText model
+        Loaded FastText model as KeyedVectors
 
     Raises:
-        FileNotFoundError: If no .bin file found in directory
+        FileNotFoundError: If no .vec file found in directory
     """
-    bin_files = list(model_dir.glob("*.bin"))
+    vec_files = list(model_dir.glob("*.vec"))
 
-    if not bin_files:
+    if not vec_files:
         raise FileNotFoundError(
-            f"No .bin model file found in {model_dir}. "
+            f"No .vec model file found in {model_dir}. "
             "Please download a FastText model first."
         )
 
-    model_path = bin_files[0]
+    model_path = vec_files[0]
     print(f"Loading FastText model from: {model_path}")
 
-    model = fasttext.load_model(str(model_path))
+    model = KeyedVectors.load_word2vec_format(str(model_path))
     print(f"Model loaded successfully!")
-    print(f"Model vocabulary size: {len(model.words)}")
+    print(f"Model vocabulary size: {len(model)}")
     print()
 
     return model
@@ -85,7 +85,7 @@ def read_words(input_file: Path) -> List[str]:
 
 # %%
 def generate_embeddings(
-    model: fasttext.FastText._FastText,
+    model: KeyedVectors,
     words: List[str]
 ) -> List[Tuple[str, np.ndarray]]:
     """
@@ -104,7 +104,7 @@ def generate_embeddings(
     print(f"Generating embeddings for {total} words...")
 
     for i, word in enumerate(words, 1):
-        embedding = model.get_word_vector(word)
+        embedding = model[word]
         embeddings.append((word, embedding))
 
         # Progress indication
@@ -175,7 +175,7 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         dest='model_dir',
         default=None,
-        help="Directory containing FastText .bin model (default: data/fasttext/)"
+        help="Directory containing FastText .vec model (default: data/fasttext/)"
     )
 
     return parser.parse_args()
