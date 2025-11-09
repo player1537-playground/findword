@@ -1,0 +1,57 @@
+{% extends "findword_api/base.html" %}
+
+{% block content %}
+<div class="search-section">
+    <div class="search-box">
+        <input
+            type="text"
+            id="searchInput"
+            placeholder="Enter a word to find similar words..."
+            autocomplete="off"
+        >
+        <button id="searchBtn">Search</button>
+    </div>
+
+    <div class="filters">
+        <div class="filter-group">
+            <label>Filter by Part of Speech:</label>
+        </div>
+        <div class="filter-group">
+            <input type="radio" id="posAny" name="pos" value="" checked>
+            <label for="posAny">Any</label>
+        </div>
+        <div class="filter-group">
+            <input type="radio" id="posNoun" name="pos" value="noun">
+            <label for="posNoun">Noun</label>
+        </div>
+        <div class="filter-group">
+            <input type="radio" id="posVerb" name="pos" value="verb">
+            <label for="posVerb">Verb</label>
+        </div>
+
+        <div class="filter-group" style="margin-left: auto;">
+            <label for="limitInput">Results limit:</label>
+            <input
+                type="number"
+                id="limitInput"
+                value="10"
+                min="1"
+                max="100"
+                style="width: 60px; padding: 6px; border: 2px solid #e0e0e0; border-radius: 4px;"
+            >
+        </div>
+    </div>
+</div>
+
+<div id="resultsSection" class="results-section">
+    <div class="empty-state">
+        <div class="empty-state-icon">🎯</div>
+        <p>Enter a word above to see similar words</p>
+    </div>
+</div>
+
+<div class="visualization-section">
+    <button id="visualizeBtn">📊 Visualize Word Space</button>
+    <div id="visualizationContainer" class="visualization-container"></div>
+</div>
+{% endblock %}

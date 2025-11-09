@@ -10,7 +10,11 @@ from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q
+from django.shortcuts import render
+from django.http import HttpResponse
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+import io
+import numpy as np
 
 from .models import Word
 from .serializers import (
@@ -179,6 +183,161 @@ class WordViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = SimilarWordSerializer(results, many=True)
         return Response(serializer.data)
 
+    @extend_schema(
+        summary="Visualize word semantic space",
+        description="Generate a t-SNE visualization of the semantic space around a target word",
+        parameters=[
+            OpenApiParameter(
+                name='limit',
+                type=int,
+                location=OpenApiParameter.QUERY,
+                description="Number of similar words to include in visualization (default: 15, max: 50)",
+                required=False,
+            ),
+        ],
+        responses={
+            200: {
+                'description': 'PNG image of the t-SNE visualization',
+                'content': {'image/png': {}},
+            },
+            404: {"description": "Word not found"},
+            400: {"description": "Invalid parameters or visualization error"},
+        },
+    )
+    @action(detail=True, methods=['get'], url_path='visualize')
+    def visualize(self, request, word=None):
+        """
+        Generate a t-SNE visualization of the word and its similar words.
+
+        Query parameters:
+        - limit: Number of similar words to include (default: 15, max: 50)
+        """
+        try:
+            # Validate limit parameter
+            try:
+                limit = int(request.query_params.get('limit', 15))
+                limit = min(max(limit, 1), 50)
+            except (ValueError, TypeError):
+                limit = 15
+
+            # Get the target word
+            target_word = Word.objects.get(word__iexact=word)
+
+            # Find similar words
+            similar_words = target_word.get_similar_words(limit=limit)
+
+            # Collect embeddings for visualization
+            words_to_plot = [target_word] + [w for w, _ in similar_words]
+            embeddings = np.array([w.get_embedding_array() for w in words_to_plot])
+
+            # Apply PCA for dimensionality reduction
+            try:
+                from sklearn.decomposition import PCA
+
+                # Reduce to reasonable dimensions before t-SNE
+                pca = PCA(n_components=min(8, embeddings.shape[1]))
+                embeddings_reduced = pca.fit_transform(embeddings)
+            except ImportError:
+                embeddings_reduced = embeddings
+
+            # Apply t-SNE for 2D visualization
+            try:
+                from sklearn.manifold import TSNE
+
+                tsne = TSNE(
+                    n_components=2,
+                    random_state=42,
+                    perplexity=min(30, len(words_to_plot) - 1),
+                    n_iter=1000,
+                )
+                embeddings_2d = tsne.fit_transform(embeddings_reduced)
+            except ImportError:
+                # Fallback: just use PCA if t-SNE not available
+                from sklearn.decomposition import PCA
+                pca = PCA(n_components=2)
+                embeddings_2d = pca.fit_transform(embeddings_reduced)
+
+            # Create visualization
+            try:
+                import matplotlib
+                matplotlib.use('Agg')  # Use non-interactive backend
+                import matplotlib.pyplot as plt
+
+                fig, ax = plt.subplots(figsize=(12, 10), dpi=100)
+
+                # Plot similar words
+                for i in range(1, len(embeddings_2d)):
+                    x, y = embeddings_2d[i]
+                    word_obj = words_to_plot[i]
+                    pos = ['noun' if word_obj.is_noun else '', 'verb' if word_obj.is_verb else '']
+                    pos = ' '.join(filter(bool, pos)) or 'other'
+
+                    # Color based on part of speech
+                    if word_obj.is_noun:
+                        color = '#667eea'  # Blue for nouns
+                    elif word_obj.is_verb:
+                        color = '#764ba2'  # Purple for verbs
+                    else:
+                        color = '#999'  # Gray for others
+
+                    ax.scatter(x, y, s=300, alpha=0.7, color=color)
+                    ax.annotate(word_obj.word, (x, y), fontsize=9, ha='center', va='center')
+
+                # Plot target word (larger)
+                target_x, target_y = embeddings_2d[0]
+                ax.scatter(target_x, target_y, s=600, color='#ff6b6b', marker='*',
+                          edgecolors='#c92a2a', linewidths=2, zorder=5)
+                ax.annotate(target_word.word, (target_x, target_y), fontsize=12,
+                           ha='center', va='center', fontweight='bold')
+
+                # Styling
+                ax.set_xlabel('Semantic Dimension 1', fontsize=11, fontweight='bold')
+                ax.set_ylabel('Semantic Dimension 2', fontsize=11, fontweight='bold')
+                ax.set_title(f'Semantic Space: "{target_word.word}" and Similar Words',
+                            fontsize=14, fontweight='bold', pad=20)
+                ax.grid(True, alpha=0.3)
+
+                # Add legend
+                from matplotlib.patches import Patch
+                legend_elements = [
+                    Patch(facecolor='#ff6b6b', label='Target word'),
+                    Patch(facecolor='#667eea', label='Noun'),
+                    Patch(facecolor='#764ba2', label='Verb'),
+                    Patch(facecolor='#999', label='Other'),
+                ]
+                ax.legend(handles=legend_elements, loc='best', fontsize=10)
+
+                # Save to buffer
+                buf = io.BytesIO()
+                plt.savefig(buf, format='png', bbox_inches='tight', dpi=100)
+                buf.seek(0)
+                plt.close(fig)
+
+                # Return as image
+                return HttpResponse(buf.getvalue(), content_type='image/png')
+
+            except ImportError:
+                return Response(
+                    {'error': 'Visualization requires matplotlib and scikit-learn to be installed'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            except Exception as e:
+                return Response(
+                    {'error': f'Visualization generation failed: {str(e)}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        except Word.DoesNotExist:
+            return Response(
+                {'error': f"Word '{word}' not found in database"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'Error generating visualization: {str(e)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
 
 @extend_schema(
     summary="Search for words",
@@ -282,3 +441,13 @@ def api_root(request):
         },
         'documentation': 'Visit /api/docs/ for interactive API documentation',
     })
+
+
+def index(request):
+    """
+    Render the main FindWord web interface.
+
+    GET /:
+        Returns HTML page with search interface and visualization features.
+    """
+    return render(request, 'findword_api/index.html')
