@@ -91,11 +91,12 @@ class SimilaritySearchSerializer(serializers.Serializer):
 
     Validates input parameters for the similarity search endpoint.
     """
-    part_of_speech = serializers.ChoiceField(
+    pos = serializers.ChoiceField(
         choices=['noun', 'verb'],
         required=False,
         allow_null=True,
         allow_blank=True,
+        source='part_of_speech',
         help_text="Filter results by part of speech: 'noun' or 'verb'"
     )
     limit = serializers.IntegerField(
@@ -130,11 +131,12 @@ class WordSearchSerializer(serializers.Serializer):
         max_length=100,
         help_text="Search query - word or prefix to search for"
     )
-    part_of_speech = serializers.ChoiceField(
+    pos = serializers.ChoiceField(
         choices=['noun', 'verb'],
         required=False,
         allow_null=True,
         allow_blank=True,
+        source='part_of_speech',
         help_text="Filter results by part of speech: 'noun' or 'verb'"
     )
     exact = serializers.BooleanField(
