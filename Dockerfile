@@ -19,7 +19,7 @@ COPY pyproject.toml .
 
 # Install Python dependencies
 RUN pip install --upgrade pip && \
-    pip install gunicorn && \
+    pip install hypercorn && \
     pip install -e .
 
 # Copy application code
@@ -49,8 +49,8 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 # Set entrypoint
 ENTRYPOINT ["docker-entrypoint.sh"]
 
-# Default command
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "60", "--access-logfile", "-", "--error-logfile", "-", "core.wsgi:application"]
+# Default command (using hypercorn ASGI server)
+CMD ["hypercorn", "--bind", "0.0.0.0:8000", "--workers", "4", "core.asgi:application"]
 
 
 # Stage 2: Image with data included (tagged as 'latest-withdata')
