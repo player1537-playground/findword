@@ -1,35 +1,37 @@
-FROM python:3.11-slim
+# Stage 1: Base image with code only (tagged as 'latest')
+FROM python:3.11-slim AS base
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PIP_NO_CACHE_DIR=1
 
-# Install system dependencies
+# Install system dependencies (minimal for SQLite)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app directory
 WORKDIR /app
 
-# Copy requirements
-COPY requirements.txt .
+# Copy dependency files
+COPY pyproject.toml .
 
 # Install Python dependencies
 RUN pip install --upgrade pip && \
-    pip install -r requirements.txt && \
-    pip install gunicorn psycopg2-binary
+    pip install gunicorn && \
+    pip install -e .
 
-# Copy project
-COPY . .
+# Copy application code
+COPY src/ ./src/
+COPY manage.py .
+
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Create necessary directories
 RUN mkdir -p /app/staticfiles /app/logs /app/data
-
-# Collect static files
-RUN python manage.py collectstatic --noinput 2>/dev/null || true
 
 # Create non-root user
 RUN useradd -m -u 1000 django && \
@@ -41,8 +43,24 @@ USER django
 EXPOSE 8000
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8000/api/', timeout=2)"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/', timeout=5)" || exit 1
 
-# Run Gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "60", "core.wsgi:application"]
+# Set entrypoint
+ENTRYPOINT ["docker-entrypoint.sh"]
+
+# Default command
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "60", "--access-logfile", "-", "--error-logfile", "-", "core.wsgi:application"]
+
+
+# Stage 2: Image with data included (tagged as 'latest-withdata')
+FROM base AS withdata
+
+# Switch to root to copy data
+USER root
+
+# Copy data directory (SQLite DB, FastText models, etc.)
+COPY --chown=django:django data/ /app/data/
+
+# Switch back to non-root user
+USER django
