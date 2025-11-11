@@ -59,6 +59,67 @@ claude-playground/
 - **Caching**: Redis (optional)
 - **Deployment**: Docker, Docker Compose, Gunicorn, Nginx
 
+## Git LFS (Large File Storage)
+
+This repository uses Git LFS to manage large data files efficiently. The following files are tracked with Git LFS:
+
+- `temp/raw_words/*.txt` - Raw word lists extracted by part-of-speech and length
+- `temp/words_classified.csv` - Classified words with POS tags
+- `data/words.csv` - Final processed words with FastText embeddings
+- `data/fasttext/*.vec` - FastText model files (e.g., wiki-news-300d-1M.vec)
+
+### Installing Git LFS
+
+Before cloning the repository, install Git LFS:
+
+**Ubuntu/Debian:**
+```bash
+apt-get install git-lfs
+```
+
+**macOS:**
+```bash
+brew install git-lfs
+```
+
+**Windows:**
+Download from https://git-lfs.github.com/
+
+After installation, initialize Git LFS:
+```bash
+git lfs install
+```
+
+### Cloning with Git LFS
+
+When you clone the repository, Git LFS will automatically download the large files:
+
+```bash
+git clone <repository-url>
+cd claude-playground
+```
+
+If you've already cloned the repository before Git LFS was set up, fetch the LFS files:
+
+```bash
+git lfs fetch --all
+git lfs checkout
+```
+
+### Working with LFS Files
+
+Git LFS is transparent in normal usage. When you commit changes to tracked files, they're automatically handled by LFS. The files appear and behave like normal files in your working directory.
+
+To see which files are tracked by LFS:
+```bash
+git lfs ls-files
+```
+
+To see LFS storage usage:
+```bash
+git lfs status
+```
+
 ## Quick Start
 
 ### Local Development
