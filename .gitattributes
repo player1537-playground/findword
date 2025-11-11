@@ -1,4 +1,2 @@
 temp/raw_words/*.txt filter=lfs diff=lfs merge=lfs -text
 temp/words_classified.csv filter=lfs diff=lfs merge=lfs -text
-data/words.csv filter=lfs diff=lfs merge=lfs -text
-data/fasttext/*.vec filter=lfs diff=lfs merge=lfs -text

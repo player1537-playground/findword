@@ -45,7 +45,10 @@ staticfiles/
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# FastText models (large files)
+# FastText models and generated data (large files)
+# Note: Only smaller temp files are tracked with Git LFS
+# Download the FastText model from: https://dl.fbaipublicfiles.com/fasttext/vectors-english/wiki-news-300d-1M.vec.zip
+# Generate data/words.csv by running: temp/generate_embeddings.py
 data/fasttext/*.bin
 data/fasttext/*.vec
 data/fasttext/*.zip

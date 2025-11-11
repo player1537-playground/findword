@@ -61,12 +61,12 @@ claude-playground/
 
 ## Git LFS (Large File Storage)
 
-This repository uses Git LFS to manage large data files efficiently. The following files are tracked with Git LFS:
+This repository uses Git LFS to manage some data files. The following files are tracked with Git LFS:
 
-- `temp/raw_words/*.txt` - Raw word lists extracted by part-of-speech and length
-- `temp/words_classified.csv` - Classified words with POS tags
-- `data/words.csv` - Final processed words with FastText embeddings
-- `data/fasttext/*.vec` - FastText model files (e.g., wiki-news-300d-1M.vec)
+- `temp/raw_words/*.txt` - Raw word lists extracted by part-of-speech and length (~10 MB total)
+- `temp/words_classified.csv` - Classified words with POS tags (~1.3 MB)
+
+**Note**: Very large files (`data/words.csv` and FastText models) are NOT tracked in git. See instructions below to obtain them.
 
 ### Installing Git LFS
 
@@ -115,10 +115,31 @@ To see which files are tracked by LFS:
 git lfs ls-files
 ```
 
-To see LFS storage usage:
+## Getting Large Files
+
+Due to their size, the FastText model and generated embeddings are not stored in git.
+
+### Download FastText Model
+
+Download the pre-trained FastText model (2.2 GB):
+
 ```bash
-git lfs status
+cd data/fasttext
+curl -L -O https://dl.fbaipublicfiles.com/fasttext/vectors-english/wiki-news-300d-1M.vec.zip
+unzip wiki-news-300d-1M.vec.zip
+rm wiki-news-300d-1M.vec.zip
 ```
+
+### Generate Embeddings
+
+After downloading the FastText model, generate the embeddings file (takes ~5 minutes):
+
+```bash
+# From the project root
+./temp/generate_embeddings.py
+```
+
+This will create `data/words.csv` (225 MB) with FastText embeddings for 36,000+ words.
 
 ## Quick Start
 
@@ -141,22 +162,35 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-4. **Run migrations**:
+4. **Download FastText model and generate embeddings**:
+```bash
+# Download model (2.2 GB)
+cd data/fasttext
+curl -L -O https://dl.fbaipublicfiles.com/fasttext/vectors-english/wiki-news-300d-1M.vec.zip
+unzip wiki-news-300d-1M.vec.zip
+rm wiki-news-300d-1M.vec.zip
+cd ../..
+
+# Generate embeddings (takes ~5 minutes)
+./temp/generate_embeddings.py
+```
+
+5. **Run migrations**:
 ```bash
 python manage.py migrate
 ```
 
-5. **Load word data** (if you have data/words.csv):
+6. **Load word data**:
 ```bash
 python manage.py loadwords --clear
 ```
 
-6. **Start development server**:
+7. **Start development server**:
 ```bash
 python manage.py runserver
 ```
 
-7. **Access the application**:
+8. **Access the application**:
    - Web Interface: http://localhost:8000/
    - API Docs: http://localhost:8000/api/docs/
    - API Root: http://localhost:8000/api/
